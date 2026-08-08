@@ -67,15 +67,23 @@
   (let [{:keys [code out]} (sh "magick" ["identify" "-format" "%[fx:mean]" png])]
     (when (zero? code) (js/parseFloat out))))
 
-(defn- wait-for-result
-  "Poll the server's result box. The page pushes; we do not guess a duration."
+(defn- reported [srv phase]
+  (first (filter #(= phase (:phase %)) @(:results srv))))
+
+(defn- wait-for-end
+  "Poll the server's result box for the page's own end-of-run report.
+
+  The page pushes; we do not guess a duration. A `start` report arriving
+  without an `end` is a *different* outcome from nothing arriving at all --
+  the first says the phone loaded and played, the second says it never got
+  there -- so the receipt records both separately."
   [srv timeout-ms]
   (let [deadline (+ (js/Date.now) timeout-ms)
         step (fn step []
                (cond
-                 (seq @(:results srv)) (js/Promise.resolve (first @(:results srv)))
+                 (reported srv "end") (js/Promise.resolve (reported srv "end"))
                  (> (js/Date.now) deadline) (js/Promise.resolve nil)
-                 :else (.then (sleep 500) step)))]
+                 :else (.then (sleep 1000) step)))]
     (step)))
 
 (defn -main [& args]
@@ -115,17 +123,23 @@
                    ;; mid-run screenshot: the frame that proves the game was
                    ;; actually rendering, not that the page merely loaded
                    (.then (fn [openurl]
+                            ;; `shot-run` and not `shot`: the outer `shot` is
+                            ;; the PATH, and binding the command result to the
+                            ;; same name shadowed it -- `existsSync` then ran
+                            ;; against a map and reported a screenshot that had
+                            ;; in fact been written as missing.
                             (let [s (sh "xcrun" ["simctl" "io" udid "screenshot" shot])]
-                              {:openurl openurl :shot s})))
-                   (.then (fn [ctx] (.then (wait-for-result srv (- timeout-ms 13500))
-                                           (fn [res] (assoc ctx :result res)))))
+                              {:openurl openurl :shot-run s})))
+                   (.then (fn [ctx] (.then (wait-for-end srv (- timeout-ms 13500))
+                                           (fn [res] (assoc ctx :result res
+                                                            :started (reported srv "start"))))))
                    (.then
                     (fn [ctx]
                       (.kill recorder "SIGINT")
                       (-> (sleep 2500)
                           (.then (fn [_] ctx)))))
                    (.then
-                    (fn [{:keys [openurl shot result]}]
+                    (fn [{:keys [openurl shot-run result started]}]
                       (server/stop! srv)
                       (let [vsize (if (fs/existsSync video) (.-size (fs/statSync video)) 0)
                             bright (when (fs/existsSync shot) (mean-brightness shot))
@@ -134,10 +148,10 @@
                                          ["openurl"]
                                          (str "simctl openurl exited " (:code openurl))
                                          {:command ["xcrun" "simctl" "openurl" udid "<url>"]})
-                             (h/evidence (if (and (zero? (:code shot)) (fs/existsSync shot)) :passed :failed)
+                             (h/evidence (if (and (zero? (:code shot-run)) (fs/existsSync shot)) :passed :failed)
                                          ["screenshot"]
                                          (str "screenshot " (if (fs/existsSync shot) "written" "missing"))
-                                         {:data {:path shot}})
+                                         {:data {:path shot :exit (:code shot-run)}})
                              (h/evidence (cond (nil? bright) :skipped
                                                (> bright 0.02) :passed
                                                :else :failed)
@@ -149,6 +163,12 @@
                                          ["recorded"]
                                          (str "video " vsize " bytes")
                                          {:data {:path video :bytes vsize}})
+                             (h/evidence (if started :passed :failed)
+                                         ["launched"]
+                                         (if started
+                                           (str "the page reported it started: " (:ua started))
+                                           "the page never reported starting — it may not have loaded at all")
+                                         {:data started})
                              (h/evidence (cond (nil? result) :failed
                                                (> (:survivedMs result) 5000) :passed
                                                :else :failed)
@@ -159,7 +179,7 @@
                                                 ", " (if (:won result) "won" "died"))
                                            "the page never reported a result")
                                          {:data result})]
-                            g (h/gate evidences {:required-checks #{"openurl" "played" "recorded" "not-blank"}})
+                            g (h/gate evidences {:required-checks #{"openurl" "launched" "played" "recorded" "not-blank"}})
                             receipt {:schema "loop-game-autoplay.qualify/v1"
                                      :udid udid
                                      :device-runtime (:out (sh "xcrun" ["simctl" "list" "devices" "booted"]))
@@ -172,6 +192,7 @@
                                                 :act-dim (:act-dim champ)}
                                      :play-seed seed
                                      :on-device result
+                                     :on-device-start started
                                      :artifacts {:video video :video-bytes vsize
                                                  :screenshot shot :mean-brightness bright}
                                      :evidence evidences

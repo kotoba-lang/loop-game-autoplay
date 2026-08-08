@@ -166,11 +166,17 @@
     G.running = true;
     document.getElementById('overlay').innerHTML = '';
     startLoop();
+    // Tell the server the phone actually got this far. Without it, a run that
+    // never finishes is indistinguishable from a page that never loaded --
+    // and on the Simulator there is no other way to tell them apart.
+    report({ phase: 'start', seed: seed, ua: navigator.userAgent,
+             screen: { w: innerWidth, h: innerHeight, dpr: window.devicePixelRatio || 1 } });
     var handle = setInterval(function () {
       if (G.lvlpending) { resolveDraft(act(policy, observe())); return; }
       if (!G.running || G.over) {
         clearInterval(handle);
         var res = {
+          phase: 'end',
           survivedMs: G.t, level: G.level, hp: G.player.hp,
           won: !!G.won, over: !!G.over, steps: null, truncated: false,
           mode: 'play', ua: navigator.userAgent,
