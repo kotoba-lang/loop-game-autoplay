@@ -83,6 +83,19 @@ return `NaN`, and the search would spend a day optimising noise.
 Two stages because the oracle cannot run where the browser can:
 `shugyo.policy` needs `goog.math.Long`, which nbb does not have.
 
+There is a second, narrower check for the **device code path** — the one the
+Simulator uses, which broke once by being handed a flat genome where the driver
+wanted `{w,b}`:
+
+```bash
+nbb --classpath src:../shinka/src verify_play.cljs
+```
+
+It loads the same `?mode=play&genome=…` URL headless for 45 s and asserts the
+**player displaced** (4120 px when wired correctly, 0 px when not). Displacement
+is the assertion that matches that bug; reaching a given level is a property of
+the champion, not of the wiring.
+
 ## Fitness
 
 ```
@@ -94,6 +107,21 @@ than running in circles; the win bonus is large enough that surviving to the
 end always beats any amount of levelling that did not. Each genome is scored
 as the **mean over several fixed seeds** — with one seed a generation's
 ranking is mostly a ranking of luck.
+
+## What one real run looked like
+
+`evidence/` holds a complete run from 2026-08-08, including the receipt from a
+booted iPhone 17 (iOS 18.7, Safari 26.5):
+
+```
+passed  played  survived 900.0s, level 3, won
+        recorded 318,505,871 bytes / 904.7 s / 35,719 frames
+```
+
+`evidence/README.md` reads the training history honestly and is worth reading
+before trusting the search: **the best genome was already present in generation
+0**, so that run demonstrates the harness, not that the search beats random
+sampling.
 
 ## Layout
 
@@ -107,6 +135,8 @@ src/…/train.cljs               shinka ask → evaluate → tell
 src/…/qualify.cljs             simctl boot/openurl/recordVideo/screenshot → hinshitsu receipt
 test/gen_parity_cases.clj      stage 1 of the parity gate (JVM oracle)
 test/policy_parity_test.cljs   stage 2 (real browser)
+verify_play.cljs               the device code path, headless, in 45 seconds
+evidence/                      one real run: champion, history, receipt, frames
 ```
 
 ## Requirements
