@@ -109,7 +109,13 @@
           (.then
            (fn [srv]
              (let [url (str "http://127.0.0.1:" (:port srv) "/?mode=play&seed=" seed
-                            "&genome=" (js/encodeURIComponent (js/JSON.stringify (clj->js (:genome champ)))))
+                                        ;; The DRIVER's shape ({:w :b}), not the champion's flat genome.
+                            ;; Handing it the genome is the bug that produced a
+                            ;; 20-minute video of a frozen level-up modal.
+                            "&genome=" (js/encodeURIComponent
+                                        (js/JSON.stringify
+                                         (clj->js (select-keys (policy/genome->policy (:genome champ))
+                                                               [:w :b])))))
                    recorder (cp/spawn "xcrun" (clj->js ["simctl" "io" udid "recordVideo" "--codec" "h264" "-f" video])
                                       #js {:stdio "ignore"})]
                (println (str "serve:  http://127.0.0.1:" (:port srv) "/"))
@@ -169,6 +175,12 @@
                                            (str "the page reported it started: " (:ua started))
                                            "the page never reported starting — it may not have loaded at all")
                                          {:data started})
+                             (h/evidence (if (reported srv "error") :failed :passed)
+                                         ["no-page-error"]
+                                         (if-let [e (reported srv "error")]
+                                           (str "the page reported an error: " (:error e))
+                                           "the page reported no error")
+                                         {:data (reported srv "error")})
                              (h/evidence (cond (nil? result) :failed
                                                (> (:survivedMs result) 5000) :passed
                                                :else :failed)
@@ -179,7 +191,7 @@
                                                 ", " (if (:won result) "won" "died"))
                                            "the page never reported a result")
                                          {:data result})]
-                            g (h/gate evidences {:required-checks #{"openurl" "launched" "played" "recorded" "not-blank"}})
+                            g (h/gate evidences {:required-checks #{"openurl" "launched" "no-page-error" "played" "recorded" "not-blank"}})
                             receipt {:schema "loop-game-autoplay.qualify/v1"
                                      :udid udid
                                      :device-runtime (:out (sh "xcrun" ["simctl" "list" "devices" "booted"]))

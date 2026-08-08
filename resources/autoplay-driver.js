@@ -133,6 +133,7 @@
   function episode(policy, seed, maxSimMs) {
     var realRandom = Math.random;
     Math.random = mulberry32(seed >>> 0);
+    requirePolicy(policy);
     try {
       newGame();
       G.running = true;
@@ -160,7 +161,23 @@
   /* Real time: let the game run its OWN loop -- its own setInterval, its own
    * draw() -- and only steer. This is the mode that gets recorded, because a
    * video of the headless path would be a video of nothing. */
+  /* The training path builds this with loop-game-autoplay.policy/genome->policy
+   * and the device path builds it from a query string. They disagreed once --
+   * the device was handed the flat genome instead -- and the only symptom was
+   * a game that played itself with no input until a level-up modal blocked it
+   * forever. Nothing threw where anyone could see it. Check the shape. */
+  function requirePolicy(policy) {
+    var ok = policy && Array.isArray(policy.w) && Array.isArray(policy.b) &&
+             policy.w.length === OBS_DIM * ACT_DIM && policy.b.length === ACT_DIM;
+    if (!ok) {
+      throw new Error('bad policy: expected {w:[' + (OBS_DIM * ACT_DIM) + '], b:[' +
+                      ACT_DIM + ']}, got ' + JSON.stringify(policy).slice(0, 120));
+    }
+    return policy;
+  }
+
   function play(policy, seed) {
+    requirePolicy(policy);
     Math.random = mulberry32(seed >>> 0);
     newGame();
     G.running = true;
@@ -172,6 +189,7 @@
     report({ phase: 'start', seed: seed, ua: navigator.userAgent,
              screen: { w: innerWidth, h: innerHeight, dpr: window.devicePixelRatio || 1 } });
     var handle = setInterval(function () {
+     try {
       if (G.lvlpending) { resolveDraft(act(policy, observe())); return; }
       if (!G.running || G.over) {
         clearInterval(handle);
@@ -193,6 +211,15 @@
         return;
       }
       applyKeys(act(policy, observe()));
+     } catch (e) {
+      // An exception inside setInterval is invisible: the callback dies, the
+      // interval keeps firing, and the game keeps running with no input. That
+      // is exactly how a 20-minute recording of a frozen level-up modal
+      // happened. Say so, once, and stop.
+      clearInterval(handle);
+      window.__autoplay.error = String(e);
+      report({ phase: 'error', error: String(e), survivedMs: (typeof G !== 'undefined' ? G.t : null) });
+     }
     }, 16);
     return true;
   }
@@ -222,6 +249,11 @@
   if (q.get('mode') === 'play' && q.get('genome')) {
     var g = JSON.parse(decodeURIComponent(q.get('genome')));
     var seed = parseInt(q.get('seed') || '1', 10);
-    window.addEventListener('load', function () { setTimeout(function () { play(g, seed); }, 300); });
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        try { play(g, seed); }
+        catch (e) { window.__autoplay.error = String(e); report({ phase: 'error', error: String(e) }); }
+      }, 300);
+    });
   }
 })();
