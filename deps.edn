@@ -1,0 +1,7 @@
+{:paths ["src" "resources"]
+ :deps {org.clojure/data.json {:mvn/version "2.5.0"}
+        io.github.kotoba-lang/shinka {:local/root "../shinka"}
+        io.github.kotoba-lang/com-nvidia-isaac-lab {:local/root "../com-nvidia-isaac-lab"}}
+ :aliases
+ {:parity {:extra-paths ["test"]
+           :main-opts ["-m" "gen-parity-cases"]}}}
