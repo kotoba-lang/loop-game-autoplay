@@ -13,7 +13,7 @@
 
   Cases are drawn from `shinka.rng`, so a failure is reproducible from its
   seed rather than from a saved blob."
-  (:require [clojure.data.json :as json]
+  (:require [json.data-json :as json]
             [clojure.java.io :as io]
             [shinka.rng :as rng]
             [shugyo.policy :as sp]
