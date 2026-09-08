@@ -13,7 +13,7 @@
   (:require ["http" :as http]
             ["fs" :as fs]
             ["path" :as path]
-            [clojure.string :as str]))
+            [kotoba.lang.text :as str]))
 
 (def ^:private driver-path
   (path/join (js/process.cwd) "resources" "autoplay-driver.js"))

@@ -34,7 +34,7 @@
             ["path" :as path]
             ["child_process" :as cp]
             [clojure.edn :as edn]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [hinshitsu.core :as h]
             [loop-game-autoplay.policy :as policy]
             [loop-game-autoplay.server :as server]))
