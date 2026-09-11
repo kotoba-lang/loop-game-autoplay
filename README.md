@@ -50,7 +50,7 @@ truth. It does not:
 
 - **what a policy is** — `a = W·obs + b` — is
   [`shugyo.policy`](https://github.com/kotoba-lang/com-nvidia-isaac-lab)
-  (formerly `kami-shugyo`). `test/gen_parity_cases.clj` calls `act-batch` as
+  (formerly `kami-shugyo`). `test/gen_parity_cases.cljk` calls `act-batch` as
   the oracle.
 - **how a population moves** is [`shinka`](https://github.com/kotoba-lang/shinka).
 - **what counts as evidence** is
@@ -88,7 +88,7 @@ Simulator uses, which broke once by being handed a flat genome where the driver
 wanted `{w,b}`:
 
 ```bash
-nbb --classpath src:../shinka/src verify_play.cljs
+nbb --classpath src:../shinka/src verify_play.cljk
 ```
 
 It loads the same `?mode=play&genome=…` URL headless for 45 s and asserts the
@@ -133,9 +133,9 @@ src/…/server.cljs              serves the unmodified page + driver; receives t
 src/…/env.cljs                 one episode = one CDP round trip
 src/…/train.cljs               shinka ask → evaluate → tell
 src/…/qualify.cljs             simctl boot/openurl/recordVideo/screenshot → hinshitsu receipt
-test/gen_parity_cases.clj      stage 1 of the parity gate (JVM oracle)
-test/policy_parity_test.cljs   stage 2 (real browser)
-verify_play.cljs               the device code path, headless, in 45 seconds
+test/gen_parity_cases.cljk      stage 1 of the parity gate (JVM oracle)
+test/policy_parity_test.cljk   stage 2 (real browser)
+verify_play.cljk               the device code path, headless, in 45 seconds
 evidence/                      one real run: champion, history, receipt, frames
 ```
 
