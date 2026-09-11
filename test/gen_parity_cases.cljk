@@ -3,7 +3,7 @@
 
   Emits the cases *and the expected answers*, computed by
   `shugyo.policy/act-batch` — the oracle for what `a = W.obs + b` means in
-  this workspace. Stage 2 (`test/policy_parity_test.cljs`) replays them
+  this workspace. Stage 2 (`test/policy_parity_test.cljk`) replays them
   against the real driver in a real browser.
 
   Two stages rather than one because the oracle cannot run where the browser
