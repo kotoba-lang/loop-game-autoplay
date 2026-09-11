@@ -9,13 +9,13 @@ already keeps, and writes the key map the game already polls.
 
 ```bash
 # 1. train (headless Chromium, seconds per generation)
-nbb --classpath src:../shinka/src -m loop-game-autoplay.train \
+kbb --backend sci --classpath src:../shinka/src -m loop-game-autoplay.train \
     --game ../../cloud-itonami/gameka/playtest/survivors-zombie.html \
     --generations 12 --population 24 --episode-ms 60000 --seeds 3
 
 # 2. qualify the champion on the phone, and record it
 xcrun simctl boot "iPhone 17"
-nbb --classpath src:../shinka/src:../hinshitsu/src -m loop-game-autoplay.qualify \
+kbb --backend sci --classpath src:../shinka/src:../hinshitsu/src -m loop-game-autoplay.qualify \
     --champion target/run-champion.edn --seed 1
 ```
 
@@ -88,7 +88,7 @@ Simulator uses, which broke once by being handed a flat genome where the driver
 wanted `{w,b}`:
 
 ```bash
-nbb --classpath src:../shinka/src verify_play.cljk
+kbb --backend sci --classpath src:../shinka/src verify_play.cljk
 ```
 
 It loads the same `?mode=play&genome=…` URL headless for 45 s and asserts the

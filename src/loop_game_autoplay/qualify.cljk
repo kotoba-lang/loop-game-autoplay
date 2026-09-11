@@ -2,7 +2,7 @@
   "Qualify a trained champion on a real booted iOS Simulator, and record it.
 
   ```
-  nbb --classpath src:../shinka/src:../hinshitsu/src -m loop-game-autoplay.qualify \\
+  kbb --backend sci --classpath src:../shinka/src:../hinshitsu/src -m loop-game-autoplay.qualify \\
       --champion target/run-champion.edn --seed 1
   ```
 
