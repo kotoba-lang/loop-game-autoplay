@@ -2,7 +2,7 @@
   "The training loop: `shinka` proposes genomes, a real browser scores them.
 
   ```
-  nbb --classpath src:../shinka/src -m loop-game-autoplay.train \\
+  kbb --backend sci --classpath src:../shinka/src -m loop-game-autoplay.train \\
       --game ../../cloud-itonami/gameka/playtest/survivors-zombie.html \\
       --generations 12 --population 24 --episode-ms 60000 --seeds 3
   ```
